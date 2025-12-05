@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import '../models/profile_request.dart';
-import '../models/mock_requests.dart';
+import '../services/request_service.dart';
 import '../models/user_profile.dart';
+import '../constants/app_constants.dart';
 
 class RequestsScreen extends StatefulWidget {
   final VoidCallback? onMenuTap;
@@ -18,6 +19,8 @@ class _RequestsScreenState extends State<RequestsScreen>
   List<ProfileRequest> _sentRequests = [];
   List<ProfileRequest> _receivedRequests = [];
   List<ProfileView> _profileViews = [];
+  bool _isLoading = true;
+  final RequestService _requestService = RequestService();
 
   @override
   void initState() {
@@ -32,12 +35,28 @@ class _RequestsScreenState extends State<RequestsScreen>
     super.dispose();
   }
 
-  void _loadData() {
+  Future<void> _loadData() async {
     setState(() {
-      _sentRequests = MockRequests.getSentRequests();
-      _receivedRequests = MockRequests.getReceivedRequests();
-      _profileViews = MockRequests.getProfileViews();
+      _isLoading = true;
     });
+    
+    try {
+      final sentRequests = await _requestService.getSentRequests();
+      final receivedRequests = await _requestService.getReceivedRequests();
+      final profileViews = await _requestService.getProfileViews();
+      
+      setState(() {
+        _sentRequests = sentRequests;
+        _receivedRequests = receivedRequests;
+        _profileViews = profileViews;
+        _isLoading = false;
+      });
+    } catch (e) {
+      print('Error loading requests: $e');
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 
   String _formatTime(DateTime dateTime) {
@@ -63,13 +82,21 @@ class _RequestsScreenState extends State<RequestsScreen>
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
-          icon: const Icon(Icons.menu),
+          icon: const Icon(Icons.menu, color: Colors.white),
           onPressed: widget.onMenuTap,
         ),
-        title: const Text('Requests'),
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        title: const Text('Requests', style: TextStyle(color: Colors.white)),
+        foregroundColor: Colors.white,
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: AppConstants.gradientRoyal,
+          ),
+        ),
         bottom: TabBar(
           controller: _tabController,
+          labelColor: Colors.white,
+          unselectedLabelColor: Colors.white70,
+          indicatorColor: AppConstants.luxuryGold,
           tabs: const [
             Tab(text: 'Sent'),
             Tab(text: 'Received'),
@@ -77,14 +104,18 @@ class _RequestsScreenState extends State<RequestsScreen>
           ],
         ),
       ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [
-          _buildSentRequestsTab(),
-          _buildReceivedRequestsTab(),
-          _buildProfileViewsTab(),
-        ],
-      ),
+      body: _isLoading
+          ? const Center(
+              child: CircularProgressIndicator(),
+            )
+          : TabBarView(
+              controller: _tabController,
+              children: [
+                _buildSentRequestsTab(),
+                _buildReceivedRequestsTab(),
+                _buildProfileViewsTab(),
+              ],
+            ),
     );
   }
 
@@ -294,8 +325,8 @@ class _RequestsScreenState extends State<RequestsScreen>
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            Theme.of(context).colorScheme.primary.withOpacity(0.3),
-            Theme.of(context).colorScheme.secondary.withOpacity(0.3),
+            AppConstants.royalPurple.withOpacity(0.3),
+            AppConstants.luxuryGold.withOpacity(0.3),
           ],
         ),
       ),

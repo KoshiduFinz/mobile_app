@@ -4,6 +4,7 @@ import 'package:agasthi_mobile/screens/auth/login_screen.dart';
 import 'package:agasthi_mobile/screens/main_navigation_screen.dart';
 import 'package:agasthi_mobile/services/auth_service.dart';
 import 'package:agasthi_mobile/widgets/app_logo.dart';
+import 'package:agasthi_mobile/constants/app_constants.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -49,7 +50,7 @@ class _SignupScreenState extends State<SignupScreen> {
         return Theme(
           data: Theme.of(context).copyWith(
             colorScheme: const ColorScheme.light(
-              primary: Color(0xFF6B46C1),
+              primary: AppConstants.primaryColor,
             ),
           ),
           child: child!,
@@ -147,9 +148,12 @@ class _SignupScreenState extends State<SignupScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF6B46C1), // Dark purple background
-      body: SafeArea(
-        child: Center(
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: AppConstants.gradientHero,
+        ),
+        child: SafeArea(
+          child: Center(
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(20.0),
             child: Container(
@@ -218,7 +222,7 @@ class _SignupScreenState extends State<SignupScreen> {
                       'Fill in your details to get started',
                       style: TextStyle(
                         fontSize: 14,
-                        color: Colors.grey,
+                        color: AppConstants.mutedText,
                       ),
                       textAlign: TextAlign.center,
                     ),
@@ -364,6 +368,7 @@ class _SignupScreenState extends State<SignupScreen> {
             ),
           ),
         ),
+        ),
       ),
     );
   }
@@ -402,15 +407,15 @@ class _SignupScreenState extends State<SignupScreen> {
             hintStyle: TextStyle(color: Colors.grey[400]),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.grey[300]!),
+              borderSide: const BorderSide(color: AppConstants.borderColor),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.grey[300]!),
+              borderSide: const BorderSide(color: AppConstants.borderColor),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Color(0xFF6B46C1), width: 2),
+              borderSide: const BorderSide(color: AppConstants.primaryColor, width: 2),
             ),
             filled: true,
             fillColor: Colors.grey[50],
@@ -449,7 +454,7 @@ class _SignupScreenState extends State<SignupScreen> {
             decoration: BoxDecoration(
               color: Colors.grey[50],
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.grey[300]!),
+              border: Border.all(color: AppConstants.borderColor),
             ),
             child: Row(
               children: [
@@ -568,15 +573,15 @@ class _SignupScreenState extends State<SignupScreen> {
             hintStyle: TextStyle(color: Colors.grey[400]),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.grey[300]!),
+              borderSide: const BorderSide(color: AppConstants.borderColor),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.grey[300]!),
+              borderSide: const BorderSide(color: AppConstants.borderColor),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Color(0xFF6B46C1), width: 2),
+              borderSide: const BorderSide(color: AppConstants.primaryColor, width: 2),
             ),
             filled: true,
             fillColor: Colors.grey[50],
@@ -696,11 +701,7 @@ class _GradientButton extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
-        gradient: const LinearGradient(
-          colors: [Color(0xFFFFD700), Color(0xFFFFB020)],
-          begin: Alignment.centerLeft,
-          end: Alignment.centerRight,
-        ),
+        gradient: AppConstants.gradientGold,
       ),
       child: ElevatedButton(
         onPressed: onPressed,
@@ -745,7 +746,7 @@ class _OrSeparator extends StatelessWidget {
             'Or continue with',
             style: TextStyle(
               fontSize: 14,
-              color: Colors.grey[600],
+              color: AppConstants.mutedText,
             ),
           ),
         ),
@@ -772,7 +773,7 @@ class _GoogleSignInButton extends StatelessWidget {
       onPressed: onPressed,
       style: OutlinedButton.styleFrom(
         padding: const EdgeInsets.symmetric(vertical: 16),
-        side: BorderSide(color: Colors.grey[300]!),
+        side: const BorderSide(color: AppConstants.borderColor),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
         ),
@@ -840,7 +841,7 @@ class _TermsAndPrivacy extends StatelessWidget {
               child: const Text(
                 'Terms of Service',
                 style: TextStyle(
-                  color: Color(0xFF9C27B0),
+                  color: AppConstants.primaryColor,
                   decoration: TextDecoration.underline,
                 ),
               ),
@@ -855,7 +856,7 @@ class _TermsAndPrivacy extends StatelessWidget {
               child: const Text(
                 'Privacy Policy',
                 style: TextStyle(
-                  color: Color(0xFF9C27B0),
+                  color: AppConstants.primaryColor,
                   decoration: TextDecoration.underline,
                 ),
               ),

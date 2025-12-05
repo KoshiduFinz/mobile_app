@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/user_profile.dart';
-import 'dart:io';
+import '../constants/app_constants.dart';
 
 class EditProfileScreen extends StatefulWidget {
   final UserProfile initialProfile;
@@ -27,7 +27,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   late TextEditingController _hobbiesController;
   late TextEditingController _languagesController;
 
-  File? _selectedImage;
+  String? _selectedImagePath; // Image path/URL
   DateTime? _selectedDateOfBirth;
   String? _selectedGender;
   String? _selectedMaritalStatus;
@@ -134,11 +134,16 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text('Edit Profile'),
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        title: const Text('Edit Profile', style: TextStyle(color: Colors.white)),
+        foregroundColor: Colors.white,
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: AppConstants.gradientRoyal,
+          ),
+        ),
         actions: [
           TextButton(
             onPressed: _saveProfile,
@@ -163,12 +168,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     CircleAvatar(
                       radius: 60,
                       backgroundColor: Colors.grey[300],
-                      backgroundImage: _selectedImage != null
-                          ? FileImage(_selectedImage!)
+                      backgroundImage: _selectedImagePath != null
+                          ? NetworkImage(_selectedImagePath!)
                           : (widget.initialProfile.avatarUrl != null
                               ? NetworkImage(widget.initialProfile.avatarUrl!)
                               : null) as ImageProvider?,
-                      child: _selectedImage == null && widget.initialProfile.avatarUrl == null
+                      child: _selectedImagePath == null && widget.initialProfile.avatarUrl == null
                           ? Text(
                               widget.initialProfile.displayName[0].toUpperCase(),
                               style: const TextStyle(fontSize: 40, fontWeight: FontWeight.bold),
@@ -178,12 +183,17 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     Positioned(
                       bottom: 0,
                       right: 0,
-                      child: CircleAvatar(
-                        radius: 20,
-                        backgroundColor: Theme.of(context).colorScheme.primary,
+                      child: Container(
+                        width: 40,
+                        height: 40,
+                        decoration: const BoxDecoration(
+                          gradient: AppConstants.gradientRoyal,
+                          shape: BoxShape.circle,
+                        ),
                         child: IconButton(
                           icon: const Icon(Icons.camera_alt, size: 20, color: Colors.white),
                           onPressed: _pickImage,
+                          padding: EdgeInsets.zero,
                         ),
                       ),
                     ),
@@ -403,10 +413,41 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     List<String> items,
     ValueChanged<String?> onChanged,
   ) {
+    // Normalize the value to match one of the items (case-insensitive)
+    String? normalizedValue;
+    if (value != null && value.isNotEmpty) {
+      // Try to find an exact match first
+      if (items.contains(value)) {
+        normalizedValue = value;
+      } else {
+        // Try case-insensitive match
+        try {
+          final matches = items.where(
+            (item) => item.toLowerCase().trim() == value.toLowerCase().trim(),
+          ).toList();
+          
+          if (matches.length == 1) {
+            normalizedValue = matches.first;
+          } else {
+            // No match or multiple matches - set to null to avoid assertion error
+            normalizedValue = null;
+          }
+        } catch (e) {
+          // If anything goes wrong, set to null
+          normalizedValue = null;
+        }
+      }
+    }
+
+    // Ensure normalizedValue is either null or exists in items list
+    if (normalizedValue != null && !items.contains(normalizedValue)) {
+      normalizedValue = null;
+    }
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: DropdownButtonFormField<String>(
-        value: value,
+        value: normalizedValue,
         decoration: InputDecoration(
           labelText: label,
           border: OutlineInputBorder(

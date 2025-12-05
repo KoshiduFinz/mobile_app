@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/user_profile.dart';
+import '../constants/app_constants.dart';
 
 class ProfileCard extends StatefulWidget {
   final UserProfile profile;
@@ -235,8 +236,8 @@ class _ProfileCardState extends State<ProfileCard>
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            Theme.of(context).colorScheme.primary.withOpacity(0.3),
-            Theme.of(context).colorScheme.secondary.withOpacity(0.3),
+            AppConstants.royalPurple.withOpacity(0.3),
+            AppConstants.luxuryGold.withOpacity(0.3),
           ],
         ),
       ),
@@ -337,7 +338,8 @@ class _ProfileCardState extends State<ProfileCard>
               children: widget.profile.hobbies!
                   .map((hobby) => Chip(
                         label: Text(hobby),
-                        backgroundColor: Colors.blue[50],
+                        backgroundColor: AppConstants.royalPurple.withOpacity(0.1),
+                        labelStyle: const TextStyle(color: AppConstants.royalPurple),
                       ))
                   .toList(),
             ),
@@ -359,7 +361,8 @@ class _ProfileCardState extends State<ProfileCard>
               children: widget.profile.spokenLanguages!
                   .map((lang) => Chip(
                         label: Text(lang),
-                        backgroundColor: Colors.green[50],
+                        backgroundColor: AppConstants.luxuryGold.withOpacity(0.1),
+                        labelStyle: const TextStyle(color: AppConstants.luxuryGold),
                       ))
                   .toList(),
             ),
@@ -401,8 +404,9 @@ class _ProfileCardState extends State<ProfileCard>
           // Message Button
           _buildActionButton(
             icon: Icons.message,
-            color: Colors.blue,
+            color: AppConstants.primaryColor,
             onPressed: widget.onMessage,
+            useGradient: true,
           ),
           // Like Button
           _buildActionButton(
@@ -419,14 +423,18 @@ class _ProfileCardState extends State<ProfileCard>
     required IconData icon,
     required Color color,
     required VoidCallback onPressed,
+    bool useGradient = false,
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        gradient: useGradient && color == AppConstants.primaryColor
+            ? AppConstants.gradientRoyal
+            : null,
+        color: useGradient ? null : color.withOpacity(0.1),
         shape: BoxShape.circle,
       ),
       child: IconButton(
-        icon: Icon(icon, color: color),
+        icon: Icon(icon, color: useGradient && color == AppConstants.primaryColor ? Colors.white : color),
         iconSize: 32,
         onPressed: onPressed,
         padding: const EdgeInsets.all(16),
