@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/interest_tag.dart';
 import '../models/mock_interests.dart';
+import '../constants/app_constants.dart';
 
 class SearchScreen extends StatefulWidget {
   final VoidCallback? onMenuTap;
@@ -54,11 +55,16 @@ class _SearchScreenState extends State<SearchScreen> {
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
-          icon: const Icon(Icons.menu),
+          icon: const Icon(Icons.menu, color: Colors.white),
           onPressed: widget.onMenuTap,
         ),
-        title: const Text('Search'),
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        title: const Text('Search', style: TextStyle(color: Colors.white)),
+        foregroundColor: Colors.white,
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: AppConstants.gradientRoyal,
+          ),
+        ),
       ),
       body: Column(
         children: [

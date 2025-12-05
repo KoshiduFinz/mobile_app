@@ -3,6 +3,7 @@ import 'package:agasthi_mobile/screens/auth/signup_screen.dart';
 import 'package:agasthi_mobile/screens/main_navigation_screen.dart';
 import 'package:agasthi_mobile/services/auth_service.dart';
 import 'package:agasthi_mobile/widgets/app_logo.dart';
+import 'package:agasthi_mobile/constants/app_constants.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -74,9 +75,12 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF6B46C1), // Dark purple background
-      body: SafeArea(
-        child: Center(
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: AppConstants.gradientHero,
+        ),
+        child: SafeArea(
+          child: Center(
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(20.0),
             child: Container(
@@ -136,7 +140,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       style: TextStyle(
                         fontSize: 28,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF6B46C1),
+                        color: AppConstants.primaryColor,
                       ),
                       textAlign: TextAlign.center,
                     ),
@@ -145,7 +149,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       'Sign in to continue your journey',
                       style: TextStyle(
                         fontSize: 14,
-                        color: Colors.grey,
+                        color: AppConstants.mutedText,
                       ),
                       textAlign: TextAlign.center,
                     ),
@@ -187,7 +191,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   _rememberMe = value ?? true;
                                 });
                               },
-                              activeColor: const Color(0xFF6B46C1),
+                              activeColor: AppConstants.primaryColor,
                             ),
                             const Text(
                               'Remember me',
@@ -202,7 +206,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           child: const Text(
                             'Forgot password?',
                             style: TextStyle(
-                              color: Color(0xFFFFB020),
+                              color: AppConstants.accentColor,
                               fontSize: 14,
                             ),
                           ),
@@ -229,6 +233,7 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             ),
           ),
+        ),
         ),
       ),
     );
@@ -268,15 +273,15 @@ class _LoginScreenState extends State<LoginScreen> {
             hintStyle: TextStyle(color: Colors.grey[400]),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.grey[300]!),
+              borderSide: const BorderSide(color: AppConstants.borderColor),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.grey[300]!),
+              borderSide: const BorderSide(color: AppConstants.borderColor),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Color(0xFF6B46C1), width: 2),
+              borderSide: const BorderSide(color: AppConstants.primaryColor, width: 2),
             ),
             filled: true,
             fillColor: Colors.grey[50],
@@ -325,15 +330,15 @@ class _LoginScreenState extends State<LoginScreen> {
             hintStyle: TextStyle(color: Colors.grey[400]),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.grey[300]!),
+              borderSide: const BorderSide(color: AppConstants.borderColor),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.grey[300]!),
+              borderSide: const BorderSide(color: AppConstants.borderColor),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Color(0xFF6B46C1), width: 2),
+              borderSide: const BorderSide(color: AppConstants.primaryColor, width: 2),
             ),
             filled: true,
             fillColor: Colors.grey[50],
@@ -417,11 +422,7 @@ class _GradientButton extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
-        gradient: const LinearGradient(
-          colors: [Color(0xFFFFD700), Color(0xFFFFB020)],
-          begin: Alignment.centerLeft,
-          end: Alignment.centerRight,
-        ),
+        gradient: AppConstants.gradientGold,
       ),
       child: ElevatedButton(
         onPressed: onPressed,
@@ -466,7 +467,7 @@ class _OrSeparator extends StatelessWidget {
             'Or continue with',
             style: TextStyle(
               fontSize: 14,
-              color: Colors.grey[600],
+              color: AppConstants.mutedText,
             ),
           ),
         ),
@@ -493,7 +494,7 @@ class _GoogleSignInButton extends StatelessWidget {
       onPressed: onPressed,
       style: OutlinedButton.styleFrom(
         padding: const EdgeInsets.symmetric(vertical: 16),
-        side: BorderSide(color: Colors.grey[300]!),
+        side: const BorderSide(color: AppConstants.borderColor),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
         ),

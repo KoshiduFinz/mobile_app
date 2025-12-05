@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/chat_conversation.dart';
-import '../models/mock_chats.dart';
+import '../services/chat_service.dart';
+import '../constants/app_constants.dart';
 import 'chat_screen.dart';
 
 class MessagesScreen extends StatefulWidget {
@@ -16,6 +17,8 @@ class _MessagesScreenState extends State<MessagesScreen> {
   final TextEditingController _searchController = TextEditingController();
   List<ChatConversation> _conversations = [];
   List<ChatConversation> _filteredConversations = [];
+  bool _isLoading = true;
+  final ChatService _chatService = ChatService();
 
   @override
   void initState() {
@@ -30,11 +33,24 @@ class _MessagesScreenState extends State<MessagesScreen> {
     super.dispose();
   }
 
-  void _loadConversations() {
+  Future<void> _loadConversations() async {
     setState(() {
-      _conversations = MockChats.getConversations();
-      _filteredConversations = _conversations;
+      _isLoading = true;
     });
+    
+    try {
+      final conversations = await _chatService.getConversations();
+      setState(() {
+        _conversations = conversations;
+        _filteredConversations = conversations;
+        _isLoading = false;
+      });
+    } catch (e) {
+      print('Error loading conversations: $e');
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 
   void _filterConversations() {
@@ -74,11 +90,16 @@ class _MessagesScreenState extends State<MessagesScreen> {
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
-          icon: const Icon(Icons.menu),
+          icon: const Icon(Icons.menu, color: Colors.white),
           onPressed: widget.onMenuTap,
         ),
-        title: const Text('Messages'),
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        title: const Text('Messages', style: TextStyle(color: Colors.white)),
+        foregroundColor: Colors.white,
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: AppConstants.gradientRoyal,
+          ),
+        ),
       ),
       body: Column(
         children: [
@@ -109,7 +130,11 @@ class _MessagesScreenState extends State<MessagesScreen> {
           ),
           // Chat List
           Expanded(
-            child: _filteredConversations.isEmpty
+            child: _isLoading
+                ? const Center(
+                    child: CircularProgressIndicator(),
+                  )
+                : _filteredConversations.isEmpty
                 ? Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -218,7 +243,7 @@ class _MessagesScreenState extends State<MessagesScreen> {
               margin: const EdgeInsets.only(left: 8),
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.primary,
+                gradient: AppConstants.gradientGold,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(

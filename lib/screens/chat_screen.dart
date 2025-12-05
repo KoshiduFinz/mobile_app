@@ -1,6 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/user_profile.dart';
 import '../models/chat_message.dart';
+import '../constants/app_constants.dart';
+import '../services/chat_service.dart';
+import '../services/auth_service.dart';
+import '../services/profile_service.dart';
+import '../services/supabase_client.dart';
 
 class ChatScreen extends StatefulWidget {
   final UserProfile profile;
@@ -21,21 +27,200 @@ class ChatScreen extends StatefulWidget {
 class _ChatScreenState extends State<ChatScreen> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
-  final String _currentUserId = 'current_user';
+  final ChatService _chatService = ChatService();
+  final AuthService _authService = AuthService();
+  final ProfileService _profileService = ProfileService();
+  final SupabaseClient _supabase = SupabaseService.client;
+  
+  String? _conversationId;
+  String? _currentUserId;
   List<ChatMessage> _messages = [];
+  bool _isLoading = true;
+  bool _isSending = false;
+  RealtimeChannel? _messageChannel;
 
   @override
   void initState() {
     super.initState();
-    _messages = widget.initialMessages ?? [];
-    // Scroll to bottom when messages load
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    _initializeChat();
+  }
+
+  Future<void> _initializeChat() async {
+    try {
+      // Get current user ID
+      _currentUserId = _authService.currentUser?.id;
+      if (_currentUserId == null) {
+        setState(() {
+          _isLoading = false;
+        });
+        return;
+      }
+
+      // Get or create conversation
+      _conversationId = widget.conversationId;
+      if (_conversationId == null) {
+        _conversationId = await _chatService.getOrCreateConversation(widget.profile.id);
+      }
+
+      // Load initial messages
+      if (widget.initialMessages != null && widget.initialMessages!.isNotEmpty) {
+        _messages = widget.initialMessages!;
+        setState(() {
+          _isLoading = false;
+        });
+      } else {
+        await _loadMessages();
+      }
+
+      // Mark messages as read
+      if (_conversationId != null) {
+        await _chatService.markMessagesAsRead(_conversationId!);
+      }
+
+      // Set up real-time subscription
+      _setupRealtimeSubscription();
+
+      // Scroll to bottom when messages load
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _scrollToBottom();
+      });
+    } catch (e) {
+      print('Error initializing chat: $e');
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _loadMessages() async {
+    if (_conversationId == null) return;
+    
+    try {
+      final messages = await _chatService.getMessages(_conversationId!);
+      setState(() {
+        _messages = messages;
+        _isLoading = false;
+      });
       _scrollToBottom();
-    });
+    } catch (e) {
+      print('Error loading messages: $e');
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  void _setupRealtimeSubscription() {
+    if (_conversationId == null) return;
+
+    // Subscribe to new messages in this conversation
+    _messageChannel = _supabase
+        .channel('messages_${_conversationId}')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.insert,
+          schema: 'public',
+          table: 'messages',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'conversation_id',
+            value: _conversationId,
+          ),
+          callback: (payload) {
+            _handleNewMessage(payload.newRecord);
+          },
+        )
+        .subscribe();
+
+    // Also listen for updates (e.g., when messages are marked as read)
+    _supabase
+        .channel('messages_update_${_conversationId}')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.update,
+          schema: 'public',
+          table: 'messages',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'conversation_id',
+            value: _conversationId,
+          ),
+          callback: (payload) {
+            _handleMessageUpdate(payload.newRecord);
+          },
+        )
+        .subscribe();
+  }
+
+  void _handleNewMessage(Map<String, dynamic> messageData) async {
+    try {
+      final senderId = messageData['sender']?.toString() ?? '';
+      
+      // Don't add the message if it's from the current user (already added optimistically)
+      if (senderId == _currentUserId) {
+        // Update the message with the actual data from database
+        final messageId = messageData['id']?.toString();
+        final index = _messages.indexWhere((msg) => msg.id == messageId);
+        if (index != -1) {
+          // Message already exists, might just need to update
+          return;
+        }
+      }
+
+      // Get sender profile
+      final senderProfile = await _profileService.getProfileById(senderId);
+      final senderName = senderId == _currentUserId 
+          ? 'You' 
+          : (senderProfile?.displayName ?? 'Unknown');
+
+      final newMessage = ChatMessage(
+        id: messageData['id']?.toString() ?? '',
+        senderId: senderId,
+        senderName: senderName,
+        content: messageData['content'] ?? '',
+        timestamp: messageData['created_at'] != null
+            ? DateTime.parse(messageData['created_at'])
+            : DateTime.now(),
+        isRead: messageData['seen'] ?? false,
+      );
+
+      if (mounted) {
+        setState(() {
+          // Check if message already exists to avoid duplicates
+          if (!_messages.any((msg) => msg.id == newMessage.id)) {
+            _messages.add(newMessage);
+          }
+        });
+        _scrollToBottom();
+        
+        // Mark as read if it's from another user
+        if (senderId != _currentUserId && _conversationId != null) {
+          await _chatService.markMessagesAsRead(_conversationId!);
+        }
+      }
+    } catch (e) {
+      print('Error handling new message: $e');
+    }
+  }
+
+  void _handleMessageUpdate(Map<String, dynamic> messageData) {
+    final messageId = messageData['id']?.toString();
+    final index = _messages.indexWhere((msg) => msg.id == messageId);
+    if (index != -1 && mounted) {
+      setState(() {
+        _messages[index] = ChatMessage(
+          id: _messages[index].id,
+          senderId: _messages[index].senderId,
+          senderName: _messages[index].senderName,
+          content: _messages[index].content,
+          timestamp: _messages[index].timestamp,
+          isRead: messageData['seen'] ?? false,
+        );
+      });
+    }
   }
 
   @override
   void dispose() {
+    _messageChannel?.unsubscribe();
     _messageController.dispose();
     _scrollController.dispose();
     super.dispose();
@@ -43,67 +228,58 @@ class _ChatScreenState extends State<ChatScreen> {
 
   void _scrollToBottom() {
     if (_scrollController.hasClients) {
-      _scrollController.animateTo(
-        _scrollController.position.maxScrollExtent,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeOut,
-      );
+      Future.delayed(const Duration(milliseconds: 100), () {
+        if (_scrollController.hasClients) {
+          _scrollController.animateTo(
+            _scrollController.position.maxScrollExtent,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOut,
+          );
+        }
+      });
     }
   }
 
-  void _sendMessage() {
+  Future<void> _sendMessage() async {
     final text = _messageController.text.trim();
-    if (text.isEmpty) return;
-
-    final newMessage = ChatMessage(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      senderId: _currentUserId,
-      senderName: 'You',
-      content: text,
-      timestamp: DateTime.now(),
-      isRead: false,
-    );
+    if (text.isEmpty || _conversationId == null || _isSending) return;
 
     setState(() {
-      _messages.add(newMessage);
+      _isSending = true;
     });
 
-    _messageController.clear();
-    _scrollToBottom();
+    try {
+      // Send message to Supabase
+      final sentMessage = await _chatService.sendMessage(
+        conversationId: _conversationId!,
+        content: text,
+      );
 
-    // Simulate a reply after a delay (mock)
-    Future.delayed(const Duration(seconds: 2), () {
+      // Add message to local list (real-time will also add it, but this ensures immediate UI update)
       if (mounted) {
-        final replyMessage = ChatMessage(
-          id: DateTime.now().millisecondsSinceEpoch.toString(),
-          senderId: widget.profile.id,
-          senderName: widget.profile.displayName,
-          content: _generateMockReply(text),
-          timestamp: DateTime.now(),
-          isRead: false,
-        );
-
         setState(() {
-          _messages.add(replyMessage);
+          // Check if message already exists (from real-time)
+          if (!_messages.any((msg) => msg.id == sentMessage.id)) {
+            _messages.add(sentMessage);
+          }
+          _isSending = false;
         });
+        _messageController.clear();
         _scrollToBottom();
       }
-    });
-  }
-
-  String _generateMockReply(String userMessage) {
-    // Simple mock reply generator
-    final lowerMessage = userMessage.toLowerCase();
-    if (lowerMessage.contains('hi') || lowerMessage.contains('hello')) {
-      return 'Hello! How can I help you?';
-    } else if (lowerMessage.contains('how are you')) {
-      return 'I\'m doing great, thank you! How about you?';
-    } else if (lowerMessage.contains('meet') || lowerMessage.contains('coffee')) {
-      return 'That sounds great! I\'d love to meet up.';
-    } else if (lowerMessage.contains('?')) {
-      return 'That\'s an interesting question. Let me think about that.';
-    } else {
-      return 'Thanks for your message! I appreciate it.';
+    } catch (e) {
+      print('Error sending message: $e');
+      if (mounted) {
+        setState(() {
+          _isSending = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to send message: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
@@ -128,6 +304,7 @@ class _ChatScreenState extends State<ChatScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        foregroundColor: Colors.white,
         title: Row(
           children: [
             CircleAvatar(
@@ -154,7 +331,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 children: [
                   Text(
                     widget.profile.displayName,
-                    style: const TextStyle(fontSize: 16),
+                    style: const TextStyle(fontSize: 16, color: Colors.white),
                   ),
                   Text(
                     widget.profile.location,
@@ -168,35 +345,43 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
           ],
         ),
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: AppConstants.gradientRoyal,
+          ),
+        ),
       ),
       body: Column(
         children: [
           // Messages List
           Expanded(
-            child: _messages.isEmpty
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.chat_bubble_outline,
-                          size: 80,
-                          color: Colors.grey[400],
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'Start a conversation with ${widget.profile.displayName}',
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Colors.grey[600],
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
-                    ),
+            child: _isLoading
+                ? const Center(
+                    child: CircularProgressIndicator(),
                   )
-                : ListView.builder(
+                : _messages.isEmpty
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.chat_bubble_outline,
+                              size: 80,
+                              color: Colors.grey[400],
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'Start a conversation with ${widget.profile.displayName}',
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: Colors.grey[600],
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        ),
+                      )
+                    : ListView.builder(
                     controller: _scrollController,
                     padding: const EdgeInsets.all(16),
                     itemCount: _messages.length,
@@ -236,8 +421,11 @@ class _ChatScreenState extends State<ChatScreen> {
                                 maxWidth: MediaQuery.of(context).size.width * 0.75,
                               ),
                               decoration: BoxDecoration(
+                                gradient: isCurrentUser
+                                    ? AppConstants.gradientRoyal
+                                    : null,
                                 color: isCurrentUser
-                                    ? Theme.of(context).colorScheme.primary
+                                    ? null
                                     : Colors.grey[300],
                                 borderRadius: BorderRadius.circular(18).copyWith(
                                   bottomRight: isCurrentUser
@@ -300,12 +488,21 @@ class _ChatScreenState extends State<ChatScreen> {
                 const SizedBox(width: 8),
                 Container(
                   decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.primary,
+                    gradient: AppConstants.gradientGold,
                     shape: BoxShape.circle,
                   ),
                   child: IconButton(
-                    icon: const Icon(Icons.send, color: Colors.white),
-                    onPressed: _sendMessage,
+                    icon: _isSending
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            ),
+                          )
+                        : const Icon(Icons.send, color: Colors.white),
+                    onPressed: _isSending ? null : _sendMessage,
                   ),
                 ),
               ],

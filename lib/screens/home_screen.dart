@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import '../models/user_profile.dart';
-import '../models/mock_profiles.dart';
+import '../services/profile_service.dart';
 import '../widgets/profile_card.dart';
+import '../constants/app_constants.dart';
 import 'chat_screen.dart';
 import 'notifications_screen.dart';
 
@@ -17,6 +18,8 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   List<UserProfile> _profiles = [];
   int _currentIndex = 0;
+  bool _isLoading = true;
+  final ProfileService _profileService = ProfileService();
 
   @override
   void initState() {
@@ -24,11 +27,24 @@ class _HomeScreenState extends State<HomeScreen> {
     _loadProfiles();
   }
 
-  void _loadProfiles() {
+  Future<void> _loadProfiles() async {
     setState(() {
-      _profiles = MockProfiles.getProfiles();
-      _currentIndex = 0;
+      _isLoading = true;
     });
+    
+    try {
+      final profiles = await _profileService.getDiscoverableProfiles();
+      setState(() {
+        _profiles = profiles;
+        _currentIndex = 0;
+        _isLoading = false;
+      });
+    } catch (e) {
+      print('Error loading profiles: $e');
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 
   void _handleLike() {
@@ -102,11 +118,16 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
-          icon: const Icon(Icons.menu),
+          icon: const Icon(Icons.menu, color: Colors.white),
           onPressed: widget.onMenuTap,
         ),
-        title: const Text('Discover'),
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        title: const Text('Discover', style: TextStyle(color: Colors.white)),
+        foregroundColor: Colors.white,
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: AppConstants.gradientRoyal,
+          ),
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.notifications_outlined),
@@ -121,9 +142,58 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-      body: _profiles.isEmpty
+      body: _isLoading
           ? const Center(
               child: CircularProgressIndicator(),
+            )
+          : _profiles.isEmpty
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.people_outline,
+                    size: 80,
+                    color: Colors.grey[400],
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'No profiles available',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.grey[700],
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Check back later for more matches',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      gradient: AppConstants.gradientGold,
+                    ),
+                    child: ElevatedButton(
+                      onPressed: _loadProfiles,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.transparent,
+                        shadowColor: Colors.transparent,
+                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text('Refresh', style: TextStyle(color: Colors.white)),
+                    ),
+                  ),
+                ],
+              ),
             )
           : _currentIndex >= _profiles.length
               ? Center(

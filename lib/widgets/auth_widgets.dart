@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../constants/app_constants.dart';
 
 /// Reusable gradient button widget for authentication screens
 class GradientButton extends StatelessWidget {
@@ -16,11 +17,7 @@ class GradientButton extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
-        gradient: const LinearGradient(
-          colors: [Color(0xFFFFD700), Color(0xFFFFB020)],
-          begin: Alignment.centerLeft,
-          end: Alignment.centerRight,
-        ),
+        gradient: AppConstants.gradientGold,
       ),
       child: ElevatedButton(
         onPressed: onPressed,
@@ -65,7 +62,7 @@ class OrSeparator extends StatelessWidget {
             'Or continue with',
             style: TextStyle(
               fontSize: 14,
-              color: Colors.grey[600],
+              color: AppConstants.mutedText,
             ),
           ),
         ),
@@ -95,7 +92,7 @@ class GoogleSignInButton extends StatelessWidget {
       onPressed: onPressed,
       style: OutlinedButton.styleFrom(
         padding: const EdgeInsets.symmetric(vertical: 16),
-        side: BorderSide(color: Colors.grey[300]!),
+        side: const BorderSide(color: AppConstants.borderColor),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
         ),
@@ -171,7 +168,7 @@ class TabButton extends StatelessWidget {
           style: TextStyle(
             fontSize: 14,
             fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-            color: isSelected ? Colors.black : Colors.grey[600],
+            color: isSelected ? Colors.black : AppConstants.mutedText,
           ),
         ),
       ),
@@ -212,7 +209,7 @@ class GenderButton extends StatelessWidget {
           style: TextStyle(
             fontSize: 14,
             fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-            color: isSelected ? Colors.black : Colors.grey[600],
+            color: isSelected ? Colors.black : AppConstants.mutedText,
           ),
         ),
       ),
@@ -243,7 +240,7 @@ class TermsAndPrivacy extends StatelessWidget {
               child: const Text(
                 'Terms of Service',
                 style: TextStyle(
-                  color: Color(0xFF9C27B0),
+                  color: AppConstants.primaryColor,
                   decoration: TextDecoration.underline,
                 ),
               ),
@@ -258,7 +255,7 @@ class TermsAndPrivacy extends StatelessWidget {
               child: const Text(
                 'Privacy Policy',
                 style: TextStyle(
-                  color: Color(0xFF9C27B0),
+                  color: AppConstants.primaryColor,
                   decoration: TextDecoration.underline,
                 ),
               ),

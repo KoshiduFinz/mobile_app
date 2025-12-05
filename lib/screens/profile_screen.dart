@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/user_profile.dart';
-import '../models/mock_profiles.dart';
+import '../services/profile_service.dart';
+import '../constants/app_constants.dart';
 import 'edit_profile_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -12,6 +13,8 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   UserProfile? _currentUserProfile;
+  final ProfileService _profileService = ProfileService();
+  bool _isLoading = true;
 
   @override
   void initState() {
@@ -19,22 +22,37 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _loadUserProfile();
   }
 
-  void _loadUserProfile() {
-    // For now, use mock data. Later this will come from Supabase
-    // Get the first profile as a placeholder for current user
-    final profiles = MockProfiles.getProfiles();
+  Future<void> _loadUserProfile() async {
     setState(() {
-      _currentUserProfile = profiles[0]; // Using first profile as mock current user
+      _isLoading = true;
     });
+    
+    try {
+      final profile = await _profileService.getCurrentUserProfile();
+      setState(() {
+        _currentUserProfile = profile;
+        _isLoading = false;
+      });
+    } catch (e) {
+      print('Error loading user profile: $e');
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_currentUserProfile == null) {
+    if (_isLoading || _currentUserProfile == null) {
       return Scaffold(
         appBar: AppBar(
-          title: const Text('My Profile'),
-          backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+          title: const Text('My Profile', style: TextStyle(color: Colors.white)),
+          foregroundColor: Colors.white,
+          flexibleSpace: Container(
+            decoration: const BoxDecoration(
+              gradient: AppConstants.gradientRoyal,
+            ),
+          ),
         ),
         body: const Center(
           child: CircularProgressIndicator(),
@@ -43,15 +61,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
 
     return Scaffold(
-      appBar: AppBar(
+        appBar: AppBar(
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () {
             Navigator.pop(context);
           },
         ),
-        title: const Text('My Profile'),
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        title: const Text('My Profile', style: TextStyle(color: Colors.white)),
+        foregroundColor: Colors.white,
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: AppConstants.gradientRoyal,
+          ),
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.edit),
@@ -99,9 +122,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       if (_currentUserProfile!.age != null)
                         Text(
                           '${_currentUserProfile!.age}',
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontSize: 18,
-                            color: Colors.grey[600],
+                            color: AppConstants.mutedText,
                           ),
                         ),
                     ],
@@ -109,13 +132,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      Icon(Icons.location_on, size: 16, color: Colors.grey[600]),
+                      const Icon(Icons.location_on, size: 16, color: AppConstants.mutedText),
                       const SizedBox(width: 4),
                       Text(
                         _currentUserProfile!.location,
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 14,
-                          color: Colors.grey[600],
+                          color: AppConstants.mutedText,
                         ),
                       ),
                     ],
@@ -124,13 +147,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     const SizedBox(height: 4),
                     Row(
                       children: [
-                        Icon(Icons.work, size: 16, color: Colors.grey[600]),
+                        const Icon(Icons.work, size: 16, color: AppConstants.mutedText),
                         const SizedBox(width: 4),
                         Text(
                           _currentUserProfile!.profession!,
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontSize: 14,
-                            color: Colors.grey[600],
+                            color: AppConstants.mutedText,
                           ),
                         ),
                       ],
@@ -223,9 +246,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
           const SizedBox(height: 8),
           Text(
             content,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 14,
-              color: Colors.grey[700],
+              color: AppConstants.mutedText,
               height: 1.5,
             ),
           ),
@@ -294,7 +317,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
               children: _currentUserProfile!.hobbies!
                   .map((hobby) => Chip(
                         label: Text(hobby),
-                        backgroundColor: Colors.blue[50],
+                        backgroundColor: AppConstants.royalPurple.withOpacity(0.1),
+                        labelStyle: const TextStyle(color: AppConstants.royalPurple),
                       ))
                   .toList(),
             ),
@@ -316,7 +340,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
               children: _currentUserProfile!.spokenLanguages!
                   .map((lang) => Chip(
                         label: Text(lang),
-                        backgroundColor: Colors.green[50],
+                        backgroundColor: AppConstants.luxuryGold.withOpacity(0.1),
+                        labelStyle: const TextStyle(color: AppConstants.luxuryGold),
                       ))
                   .toList(),
             ),
